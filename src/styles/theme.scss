@@ -1,0 +1,101 @@
+:root {
+  font-family: 'Inter', 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  line-height: 1.4;
+  font-weight: 400;
+  color: #d7dde8;
+  background-color: #0f141c;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top right, #1e2633 0%, #0f141c 42%, #0a0f16 100%);
+  color: #d7dde8;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #f2f6fc;
+}
+
+.page-description {
+  margin: 0;
+  color: #93a4bf;
+}
+
+.panel-card {
+  background: linear-gradient(135deg, rgba(30, 39, 55, 0.84), rgba(18, 23, 33, 0.84));
+  border: 1px solid rgba(110, 145, 188, 0.22);
+  box-shadow: 0 0 0 1px rgba(117, 152, 195, 0.1), 0 10px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+}
+
+.el-card {
+  --el-card-border-color: rgba(110, 145, 188, 0.22);
+  --el-bg-color-overlay: rgba(18, 23, 33, 0.95);
+  --el-fill-color-light: rgba(54, 72, 101, 0.35);
+  --el-text-color-primary: #e3ebf7;
+  --el-text-color-regular: #b8c6da;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-date-editor.el-input__wrapper,
+.el-textarea__inner {
+  background-color: rgba(20, 28, 40, 0.9);
+  box-shadow: 0 0 0 1px rgba(95, 127, 166, 0.25) inset;
+}
+
+.el-button {
+  border-radius: 10px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.status-normal {
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+}
+
+.status-warning {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.status-danger {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
