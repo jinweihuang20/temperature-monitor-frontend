@@ -17,6 +17,36 @@ const filteredTableData = computed(() => {
   }))
 })
 
+const escapeCsv = (value: string | number) => {
+  const normalized = String(value).replaceAll('"', '""')
+  return `"${normalized}"`
+}
+
+const downloadCsv = () => {
+  if (!filteredTableData.value.length) return
+
+  const header = ['時間', '測點 ID', '測點名稱', '溫度(C)']
+  const rows = filteredTableData.value.map((row) => [
+    row.time,
+    row.sensorId,
+    row.sensorName,
+    row.value.toFixed(1),
+  ])
+
+  const csvContent = [header, ...rows].map((cols) => cols.map((col) => escapeCsv(col)).join(',')).join('\n')
+  const bom = '\uFEFF'
+  const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const timestamp = dayjs().format('YYYYMMDD_HHmmss')
+  link.href = url
+  link.setAttribute('download', `temperature-history-${timestamp}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 const getRowClassName = ({ rowIndex }: { rowIndex: number }) =>
   rowIndex % 2 === 0 ? 'row-dark-a' : 'row-dark-b'
 
@@ -67,6 +97,9 @@ onMounted(async () => {
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="queryHistory" :loading="store.isLoadingHistory">查詢</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button @click="downloadCsv" :disabled="!filteredTableData.length">下載 CSV</el-button>
         </el-form-item>
       </el-form>
     </el-card>
