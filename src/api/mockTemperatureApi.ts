@@ -10,8 +10,8 @@ import type {
 
 const sensors: SensorBasicInfo[] = [
   { sensorId: "S-101", sensorName: "鍋爐區溫度感測器", area: "Boiler" },
-  // { sensorId: 'S-102', sensorName: '冷卻區溫度感測器', area: 'Cooling' },
-  // { sensorId: 'S-103', sensorName: '管線區溫度感測器', area: 'Pipeline' },
+  { sensorId: "S-102", sensorName: "冷卻區溫度感測器", area: "Cooling" },
+  { sensorId: "S-103", sensorName: "管線區溫度感測器", area: "Pipeline" },
 ];
 
 let alertSettings: AlertSettings = {

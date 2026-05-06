@@ -26,15 +26,10 @@ const getRowClassName = ({
   if (row.status === 'warning') return 'row-alert-warning'
   return rowIndex % 2 === 0 ? 'row-dark-a' : 'row-dark-b'
 }
-const pageAlertLevel = computed<'normal' | 'warning' | 'danger'>(() => {
-  if (store.realtimeData.some((item) => item.status === 'danger')) return 'danger'
-  if (store.realtimeData.some((item) => item.status === 'warning')) return 'warning'
-  return 'normal'
-})
-const pageAlertText = computed(() => {
-  if (pageAlertLevel.value === 'danger') return '高溫危險：有測點已達危險狀態，請立即檢查設備。'
-  if (pageAlertLevel.value === 'warning') return '溫度警告：有測點接近警戒值，請留意趨勢變化。'
-  return '所有測點目前皆在正常範圍。'
+const highestTempSensorText = computed(() => {
+  if (!store.realtimeData.length) return '近 1 分鐘'
+  const hottest = [...store.realtimeData].sort((a, b) => b.temperature - a.temperature)[0]
+  return `${hottest.sensorName} (${hottest.sensorId})`
 })
 
 onMounted(async () => {
@@ -53,26 +48,36 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="page-container" :class="`page-alert-${pageAlertLevel}`">
+  <div class="page-container">
     <div class="page-head">
       <h1 class="page-title">即時溫度監控</h1>
       <p class="page-description">資料每 3 秒自動更新。</p>
     </div>
-    <div class="alert-slot">
-      <el-alert
-        v-if="pageAlertLevel !== 'normal'"
-        :title="pageAlertText"
-        :type="pageAlertLevel === 'danger' ? 'error' : pageAlertLevel === 'warning' ? 'warning' : 'success'"
-        effect="dark"
-        :closable="false"
-        show-icon
-        class="realtime-alert"
-      />
+    <div class="sensor-temp-grid">
+      <el-card
+        v-for="sensor in store.realtimeData"
+        :key="sensor.sensorId"
+        shadow="never"
+        class="panel-card sensor-temp-card"
+        :class="`sensor-temp-${sensor.status}`"
+      >
+        <div class="sensor-temp-title">
+          <span class="status-dot" :class="getStatusClass(sensor.status)"></span>
+          <span>{{ sensor.sensorName }}</span>
+        </div>
+        <div class="sensor-temp-value">{{ sensor.temperature.toFixed(1) }} C</div>
+        <div class="sensor-temp-sub">{{ sensor.sensorId }} / {{ sensor.area }}</div>
+      </el-card>
     </div>
 
-    <el-row :gutter="12">
+    <el-row :gutter="12" class="aux-kpi-row">
       <el-col :xs="24" :md="8">
-        <KpiCard title="目前最高溫" :value="store.latestMaxTemperature.toFixed(1)" unit="C" trend="近 1 分鐘" />
+        <KpiCard
+          title="目前最高溫"
+          :value="store.latestMaxTemperature.toFixed(1)"
+          unit="C"
+          :trend="highestTempSensorText"
+        />
       </el-col>
       <el-col :xs="24" :md="8">
         <KpiCard title="平均溫度" :value="store.latestAverageTemperature.toFixed(1)" unit="C" trend="全測點平均" />
@@ -82,14 +87,9 @@ onBeforeUnmount(() => {
       </el-col>
     </el-row>
 
-    <TemperatureLineChart
-      :points="store.realtimeTrendData"
-      title="即時溫度趨勢"
-      :height="360"
-      :class="`chart-alert-${pageAlertLevel}`"
-    />
+    <TemperatureLineChart :points="store.realtimeTrendData" title="即時溫度趨勢" :height="360" />
 
-    <el-card shadow="never" class="panel-card realtime-status-card" :class="`status-alert-${pageAlertLevel}`">
+    <el-card shadow="never" class="panel-card realtime-status-card">
       <template #header>
         <div class="card-header">
           <span>測點即時狀態</span>
@@ -124,19 +124,6 @@ onBeforeUnmount(() => {
   transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
 }
 
-.realtime-alert {
-  border-radius: 12px;
-}
-
-.alert-slot {
-  min-height: 70px;
-}
-
-.realtime-alert:deep(.el-alert) {
-  border: 2px solid transparent;
-  box-sizing: border-box;
-}
-
 .realtime-status-card {
   border: 2px solid transparent;
   box-sizing: border-box;
@@ -147,107 +134,94 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.realtime-alert:deep(.el-alert__title) {
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: 0.3px;
-  line-height: 1.45;
+.sensor-temp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
 
-.realtime-alert:deep(.el-alert__icon) {
-  font-size: 22px;
+.sensor-temp-card {
+  border: 1px solid rgba(91, 121, 162, 0.3);
+  padding: 10px 12px;
 }
 
-.page-alert-warning .page-head {
-  border-color: rgba(245, 158, 11, 0.7);
-  background: rgba(245, 158, 11, 0.12);
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25), 0 0 24px rgba(245, 158, 11, 0.38);
+.sensor-temp-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b8cae4;
+  font-size: 13px;
 }
 
-.page-alert-danger .page-head {
-  border-color: rgba(239, 68, 68, 0.75);
-  background: rgba(239, 68, 68, 0.12);
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.28), 0 0 30px rgba(239, 68, 68, 0.45);
+.sensor-temp-value {
+  margin-top: 4px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #f3f8ff;
 }
 
-.page-alert-warning .page-title {
-  color: #ffd27c;
-  font-size: 36px;
-  font-weight: 900;
+.sensor-temp-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8ea4c4;
 }
 
-.page-alert-danger .page-title {
-  color: #ff8f8f;
-  font-size: 40px;
-  font-weight: 900;
-  text-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
+.sensor-temp-warning {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: linear-gradient(135deg, rgba(99, 68, 19, 0.62), rgba(56, 37, 12, 0.56));
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 0 16px rgba(245, 158, 11, 0.24);
 }
 
-.page-alert-warning .page-description,
-.page-alert-danger .page-description {
-  font-size: 17px;
-  font-weight: 700;
-  color: #ffe6bb;
+.sensor-temp-warning .sensor-temp-value {
+  color: #ffd179;
 }
 
-.page-alert-danger .realtime-alert {
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.32), 0 0 26px rgba(239, 68, 68, 0.4);
-}
-
-.page-alert-warning .realtime-alert {
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3), 0 0 22px rgba(245, 158, 11, 0.32);
-}
-
-.page-alert-warning :deep(.chart-alert-warning .chart-card) {
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 0 20px rgba(245, 158, 11, 0.25);
-}
-
-.page-alert-danger :deep(.chart-alert-danger .chart-card) {
-  border-color: rgba(239, 68, 68, 0.58);
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24), 0 0 24px rgba(239, 68, 68, 0.35);
+.sensor-temp-danger {
+  border-color: rgba(239, 68, 68, 0.62);
+  background: linear-gradient(135deg, rgba(108, 37, 37, 0.66), rgba(64, 20, 20, 0.56));
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24), 0 0 20px rgba(239, 68, 68, 0.3);
   animation: dangerPulse 1.8s ease-in-out infinite;
 }
 
-.status-alert-warning {
-  border-color: rgba(245, 158, 11, 0.45);
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.22), 0 0 18px rgba(245, 158, 11, 0.2);
+.sensor-temp-danger .sensor-temp-value {
+  color: #ff8d8d;
 }
 
-.status-alert-danger {
-  border-color: rgba(239, 68, 68, 0.55);
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24), 0 0 24px rgba(239, 68, 68, 0.3);
-  animation: dangerPulse 1.8s ease-in-out infinite;
+.aux-kpi-row :deep(.kpi-card) {
+  min-height: 106px;
+  border-color: rgba(86, 112, 147, 0.2);
+  background: linear-gradient(135deg, rgba(18, 27, 39, 0.84), rgba(13, 20, 31, 0.84));
+  box-shadow: 0 0 0 1px rgba(92, 122, 161, 0.08), 0 8px 16px rgba(0, 0, 0, 0.24);
 }
 
-.status-alert-warning :deep(th.el-table__cell) {
-  background: rgba(87, 60, 16, 0.92);
-  color: #ffdca1;
+.aux-kpi-row :deep(.kpi-card .title) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #87a0c1;
 }
 
-.status-alert-danger :deep(th.el-table__cell) {
-  background: rgba(95, 33, 33, 0.9);
-  color: #ffd2d2;
+.aux-kpi-row :deep(.kpi-card .value) {
+  font-size: 30px;
+  color: #d8e4f6;
+  text-shadow: none;
 }
 
-.status-alert-warning :deep(.el-table__row:hover > td.el-table__cell) {
-  background: rgba(110, 78, 20, 0.88) !important;
+.aux-kpi-row :deep(.kpi-card .unit) {
+  color: #8da5c5;
 }
 
-.status-alert-danger :deep(.el-table__row:hover > td.el-table__cell) {
-  background: rgba(113, 37, 37, 0.86) !important;
-}
-
-.page-alert-danger .page-head,
-.page-alert-danger .realtime-alert {
-  animation: dangerPulse 1.8s ease-in-out infinite;
+.aux-kpi-row :deep(.kpi-card .trend) {
+  font-size: 11px;
+  color: #6f87a8;
 }
 
 @keyframes dangerPulse {
+
   0%,
   100% {
     filter: brightness(1);
   }
+
   50% {
     filter: brightness(1.18);
   }
