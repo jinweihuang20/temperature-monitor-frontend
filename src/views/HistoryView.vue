@@ -17,6 +17,9 @@ const filteredTableData = computed(() => {
   }))
 })
 
+const getRowClassName = ({ rowIndex }: { rowIndex: number }) =>
+  rowIndex % 2 === 0 ? 'row-dark-a' : 'row-dark-b'
+
 const queryHistory = async () => {
   const [start, end] = dateRange.value
   await store.fetchHistoryData({
@@ -77,7 +80,13 @@ onMounted(async () => {
     <TemperatureLineChart :points="store.historyData" title="歷史溫度曲線" :height="360" />
 
     <el-card shadow="never" class="panel-card">
-      <el-table :data="filteredTableData" v-loading="store.isLoadingHistory" height="320">
+      <el-table
+        :data="filteredTableData"
+        v-loading="store.isLoadingHistory"
+        height="320"
+        class="history-table"
+        :row-class-name="getRowClassName"
+      >
         <el-table-column prop="time" label="時間" width="170" />
         <el-table-column prop="sensorId" label="測點 ID" width="100" />
         <el-table-column prop="sensorName" label="測點名稱" min-width="220" />
@@ -88,3 +97,47 @@ onMounted(async () => {
     </el-card>
   </div>
 </template>
+
+<style scoped>
+.history-table {
+  --el-table-bg-color: rgba(13, 19, 29, 0.88);
+  --el-table-tr-bg-color: rgba(16, 24, 36, 0.82);
+  --el-table-striped-bg-color: rgba(12, 19, 30, 0.92);
+  --el-table-header-bg-color: rgba(26, 36, 52, 0.92);
+  --el-table-row-hover-bg-color: rgba(34, 50, 73, 0.86);
+  --el-table-border-color: rgba(84, 113, 151, 0.2);
+  --el-table-text-color: #d7e2f3;
+  --el-table-header-text-color: #a9bdd9;
+}
+
+.history-table:deep(.el-table),
+.history-table:deep(.el-table__inner-wrapper),
+.history-table:deep(.el-table__body-wrapper),
+.history-table:deep(.el-table__header-wrapper) {
+  background-color: rgba(13, 19, 29, 0.88);
+  color: #d7e2f3;
+}
+
+.history-table:deep(th.el-table__cell) {
+  background: rgba(26, 36, 52, 0.92);
+  color: #a9bdd9;
+  border-bottom: 1px solid rgba(96, 127, 165, 0.35);
+}
+
+.history-table:deep(td.el-table__cell) {
+  border-bottom: 1px solid rgba(84, 113, 151, 0.2);
+  color: #d7e2f3;
+}
+
+.history-table:deep(.row-dark-a td.el-table__cell) {
+  background: rgba(10, 16, 25, 0.94) !important;
+}
+
+.history-table:deep(.row-dark-b td.el-table__cell) {
+  background: rgba(15, 23, 35, 0.94) !important;
+}
+
+.history-table:deep(.el-table__row:hover > td.el-table__cell) {
+  background: rgba(34, 50, 73, 0.86) !important;
+}
+</style>

@@ -41,6 +41,9 @@ const setOptions = () => {
   if (!chart) return
   chart.setOption({
     backgroundColor: 'transparent',
+    animation: false,
+    animationDuration: 0,
+    animationDurationUpdate: 0,
     title: {
       text: props.title,
       textStyle: { color: '#dce7f7', fontSize: 14 },

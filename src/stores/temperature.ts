@@ -16,10 +16,12 @@ const defaultAlertSettings: AlertSettings = {
   notificationsEnabled: true,
   targetSensorIds: [],
 }
+const MAX_TREND_POINTS_PER_SENSOR = 120
 
 export const useTemperatureStore = defineStore('temperature', () => {
   const sensors = ref<SensorBasicInfo[]>([])
   const realtimeData = ref<SensorRealtimeData[]>([])
+  const realtimeTrendData = ref<TemperaturePoint[]>([])
   const historyData = ref<TemperaturePoint[]>([])
   const alertSettings = ref<AlertSettings>({ ...defaultAlertSettings })
   const isLoadingRealtime = ref(false)
@@ -67,6 +69,25 @@ export const useTemperatureStore = defineStore('temperature', () => {
     isLoadingRealtime.value = true
     try {
       realtimeData.value = await mockTemperatureApi.getRealtimeData()
+      const incomingPoints: TemperaturePoint[] = realtimeData.value.map((item) => ({
+        timestamp: item.updatedAt,
+        sensorId: item.sensorId,
+        sensorName: item.sensorName,
+        value: item.temperature,
+      }))
+      const mergedPoints = [...realtimeTrendData.value, ...incomingPoints]
+      const pointsBySensor = new Map<string, TemperaturePoint[]>()
+
+      mergedPoints.forEach((point) => {
+        if (!pointsBySensor.has(point.sensorId)) {
+          pointsBySensor.set(point.sensorId, [])
+        }
+        pointsBySensor.get(point.sensorId)!.push(point)
+      })
+
+      realtimeTrendData.value = Array.from(pointsBySensor.values())
+        .flatMap((points) => points.slice(-MAX_TREND_POINTS_PER_SENSOR))
+        .sort((a, b) => dayjs(a.timestamp).valueOf() - dayjs(b.timestamp).valueOf())
       lastRealtimeFetchAt.value = dayjs().format('YYYY-MM-DD HH:mm:ss')
     } finally {
       isLoadingRealtime.value = false
@@ -98,6 +119,7 @@ export const useTemperatureStore = defineStore('temperature', () => {
   return {
     sensors,
     realtimeData,
+    realtimeTrendData,
     historyData,
     alertSettings,
     isLoadingRealtime,
